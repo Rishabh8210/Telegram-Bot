@@ -1,0 +1,22 @@
+{
+  "name": "telegram-bot",
+  "version": "1.0.0",
+  "description": "This is a dummy telegram bot basically help in dsa",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rishabh8210/Telegram-Bot.git"
+  },
+  "author": "Rishabh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rishabh8210/Telegram-Bot/issues"
+  },
+  "homepage": "https://github.com/Rishabh8210/Telegram-Bot#readme",
+  "dependencies": {
+    "telegraf": "^4.16.3"
+  }
+}
