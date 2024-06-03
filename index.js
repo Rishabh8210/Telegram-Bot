@@ -10,6 +10,7 @@ bot.start((ctx) => {
     ctx.replyWithHTML(`Welcome <b>${user.first_name}</b>, How can i assist you today?`)
 })
 bot.command('algorithms', (ctx) => ctx.reply('Choose topic'))
+bot.command('graph', (ctx) => ctx.reply('Tell me which algorithm source code you wanted?'))
 bot.help((ctx) => ctx.reply('Send me a sticker'))
 bot.on(message('sticker'), (ctx) => ctx.reply('👍'))
 
