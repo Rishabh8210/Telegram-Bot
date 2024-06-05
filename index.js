@@ -9,12 +9,18 @@ bot.start((ctx) => {
     const user = ctx.from;
     ctx.replyWithHTML(`Welcome <b>${user.first_name}</b>, How can i assist you today?`)
 })
-bot.command('algorithms', (ctx) => ctx.reply('Choose topic'))
-bot.command('graph', (ctx) => ctx.reply('Tell me which algorithm source code you wanted?'))
 bot.help((ctx) => ctx.reply('Send me a sticker'))
 bot.on(message('sticker'), (ctx) => ctx.reply('👍'))
 
 bot.command('leave', (ctx) => ctx.reply("Alright, if you have any more questions in the future or need assistance, feel free to return. Have a great day!"))
+
+// Algorithms Setup
+bot.command('algorithms', (ctx) => ctx.reply('Choose topic'))
+// bot.on('text', async(ctx) => {
+
+// })
+bot.command('graph', (ctx) => ctx.reply('Tell me which algorithm source code you wanted?'))
+
 
 // Video setup
 bot.command('video', async (ctx) => {
@@ -45,30 +51,49 @@ bot.command('video', async (ctx) => {
 // Audio setup 
 bot.command('audio', async (ctx) => {
     const url = ctx.message.text.split(' ')[1];
-    if (ytdl.validateURL(url)) {
-        ctx.reply('Downloading your audio...');
-        const info = await ytdl.getInfo(url);
-        const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
-        let modifiedInfo = info.videoDetails.title.split(' ');
-        modifiedInfo = modifiedInfo.join('_');
-        modifiedInfo = modifiedInfo.replaceAll('|', '-');
-        console.log(modifiedInfo)
-        // modifiedInfo = (modifiedInfo.length > 50) ? modifiedInfo.slice(0,50) : modifiedInfo;
-        console.log(modifiedInfo)
-        const outputPath = `downloads/${modifiedInfo}.mp3`;
-        const writeStream = fs.createWriteStream(outputPath);
-
-        ytdl(url, { format })
-            .pipe(writeStream)
-            .on('finish', async () => {
-                await ctx.replyWithAudio({ source: outputPath }, { caption: 'Here is your requested audio, Enjoy !' });
-                fs.unlinkSync(outputPath);
-            })
-            .on('error', async (err) => {
-                console.error(err);
-                await ctx.reply('An error occurred while downloading the audio.');
-            });
-    } else {
+    try {
+        if (ytdl.validateURL(url)) {
+            ctx.reply('Downloading your audio, please wait...');
+            const info = await ytdl.getInfo(url);
+            const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+            let modifiedInfo = info.videoDetails.title.split(' ');
+            modifiedInfo = modifiedInfo.join('_');
+            modifiedInfo = modifiedInfo.replaceAll('|', '-');
+            console.log(modifiedInfo)
+            // modifiedInfo = (modifiedInfo.length > 50) ? modifiedInfo.slice(0,50) : modifiedInfo;
+            console.log(modifiedInfo)
+            const outputPath = `downloads/${modifiedInfo}.mp3`;
+            const writeStream = fs.createWriteStream(outputPath);
+            ytdl(url, { format })
+                .pipe(writeStream)
+                .on('finish', async () => {
+                    try {
+                        const stats = fs.statSync(outputPath);
+                        const fileSizeInBytes = stats.size;
+                        const fileSizeInMegaBytes = fileSizeInBytes / (1024 * 1024);
+                        if (fileSizeInMegaBytes > 50) {
+                            throw new Error("File size is too large, sorry we can't serve your requests, Thank you!");
+                        }
+                        await ctx.replyWithAudio({ source: outputPath }, { caption: 'Here is your requested audio, Enjoy !' });
+                    } catch (err) {
+                        console.log("Something went wrong, error : ", err)
+                        ctx.reply('An error occurred while downloading the audio.');
+                    }
+                    finally{
+                        if (fs.existsSync(outputPath)) {
+                            fs.unlinkSync(outputPath);
+                        }
+                    }
+                })
+                .on('error', async (err) => {
+                    console.error(err);
+                    await ctx.reply('An error occurred while downloading the audio.');
+                });
+        } else {
+            ctx.reply('Invalid URL. Please send a valid YouTube link.');
+        }
+    } catch (err) {
+        console.log("Something went wrong, error : ", err)
         ctx.reply('Invalid URL. Please send a valid YouTube link.');
     }
 });
