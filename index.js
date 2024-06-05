@@ -28,21 +28,41 @@ bot.command('video', async (ctx) => {
     if (ytdl.validateURL(url)) {
         ctx.reply('Downloading your video...');
         const info = await ytdl.getInfo(url);
-        const format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
-
-        const outputPath = `downloads/${info.videoDetails.title}.mp4`;
+        const format = ytdl.chooseFormat(info.formats, { quality: 'lowestvideo' });
+        let modifiedInfo = info.videoDetails.title.split(' ');
+        modifiedInfo = modifiedInfo.join('_');
+        modifiedInfo = modifiedInfo.replaceAll('|', '-');
+        console.log(modifiedInfo)
+        // modifiedInfo = (modifiedInfo.length > 50) ? modifiedInfo.slice(0,50) : modifiedInfo;
+        console.log(modifiedInfo)
+        const outputPath = `downloads/${modifiedInfo}.mp4`;
         const writeStream = fs.createWriteStream(outputPath);
 
         ytdl(url, { format })
-            .pipe(writeStream)
-            .on('finish', async () => {
-                await ctx.replyWithVideo({ source: outputPath }, { caption: 'Here is your requested video, Enjoy !' });
-                fs.unlinkSync(outputPath);
-            })
-            .on('error', async (err) => {
-                console.error(err);
-                await ctx.reply('An error occurred while downloading the video.');
-            });
+                .pipe(writeStream)
+                .on('finish', async () => {
+                    try {
+                        const stats = fs.statSync(outputPath);
+                        const fileSizeInBytes = stats.size;
+                        const fileSizeInMegaBytes = fileSizeInBytes / (1024 * 1024);
+                        if (fileSizeInMegaBytes > 50) {
+                            throw new Error("Unfortunately, the video file exceeds our size limit. Please request a file under 50MB. Thank you!");
+                        }
+                        await ctx.replyWithVideo({ source: outputPath }, { caption: 'Here is your requested video, Enjoy !' });
+                    } catch (err) {
+                        console.log("Something went wrong, error : ", err)
+                        ctx.reply(err.message);
+                    }
+                    finally{
+                        if (fs.existsSync(outputPath)) {
+                            fs.unlinkSync(outputPath);
+                        }
+                    }
+                })
+                .on('error', async (err) => {
+                    console.error(err);
+                    await ctx.reply('An error occurred while downloading the video.');
+                });
     } else {
         ctx.reply('Invalid URL. Please send a valid YouTube link.');
     }
@@ -72,12 +92,12 @@ bot.command('audio', async (ctx) => {
                         const fileSizeInBytes = stats.size;
                         const fileSizeInMegaBytes = fileSizeInBytes / (1024 * 1024);
                         if (fileSizeInMegaBytes > 50) {
-                            throw new Error("File size is too large, sorry we can't serve your requests, Thank you!");
+                            throw new Error("Unfortunately, the audio file exceeds our size limit. Please request a file under 50MB. Thank you!");
                         }
                         await ctx.replyWithAudio({ source: outputPath }, { caption: 'Here is your requested audio, Enjoy !' });
                     } catch (err) {
                         console.log("Something went wrong, error : ", err)
-                        ctx.reply('An error occurred while downloading the audio.');
+                        ctx.reply(err.message);
                     }
                     finally{
                         if (fs.existsSync(outputPath)) {
